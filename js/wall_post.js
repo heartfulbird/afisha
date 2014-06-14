@@ -107,7 +107,7 @@ function callbackFunc(result) {
 
 function wallPost (postVars) {
 
-    $('body').append('<iframe class="hidden" src="http://reallyclubs.ru/wall_post.html#' + postVars +'" frameborder="0"></iframe>');
+    $('body').append('<iframe class="hidden" src="http://favoriteclubs.ru/wall_post.html#' + postVars +'" frameborder="0"></iframe>');
 
 }
 
@@ -154,7 +154,7 @@ $(function () {
 //
 //        window.addEventListener( "message",
 //            function (e) {
-//                //if(e.origin !== 'http://reallyclubs.ru') { return; }////если проверять откуда данные
+//                //if(e.origin !== 'http://favoriteclubs.ru') { return; }////если проверять откуда данные
 //
 //                //Домен фрэйма
 //                //var domain = e.origin;
