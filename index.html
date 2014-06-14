@@ -1,27 +1,1782 @@
-<!DOCTYPE html>
 
-<html>
-    <head>
-        <meta charset="utf-8" />
-        <meta name="format-detection" content="telephone=no" />
-        <meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width, height=device-height, target-densitydpi=device-dpi" />
-        <link rel="stylesheet" type="text/css" href="css/index.css" />
-        <title>Social network hub</title>
-    </head>
-    <body>
-        <div class="posttrackerdemo" id="sapp">
-			<div class="posttrackerdemo_header" id="sheader">header</div>
-			<div class="posttrackerdemo_main overthrow" id="smain">Загрузка...</div>
-			<div class="posttrackerdemo_menu" id="smenu" onClick="plugin_www_post_tracker_ru.put_trackCode();">Добавить трек-код</div>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<title></title>
+<meta charset="utf-8" />
+<meta name="format-detection" content="telephone=no" />
+<meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width, height=device-height, target-densitydpi=device-dpi" />
+
+
+
+
+<script type="text/javascript" src="cordova.js"></script>
+<link href="css/mainstyle.css?28733" rel="stylesheet" type="text/css"/>
+
+
+<!--jquery -->
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.1/jquery.min.js"></script>
+<!---------------------------------------- -->
+
+<!--Jquery mobile + datebox-->
+<link rel="stylesheet" href="http://code.jquery.com/mobile/1.2.1/jquery.mobile-1.2.1.min.css" />
+<link rel="stylesheet" type="text/css" href="http://dev.jtsage.com/cdn/datebox/latest/jqm-datebox.min.css" />
+
+
+<script src="http://code.jquery.com/mobile/1.2.1/jquery.mobile-1.2.1.min.js"></script>
+
+
+<script type="text/javascript" src="http://dev.jtsage.com/cdn/datebox/latest/jqm-datebox.core.min.js"></script>
+<script type="text/javascript" src="http://dev.jtsage.com/cdn/datebox/latest/jqm-datebox.mode.calbox.min.js"></script>
+<script type="text/javascript" src="js/jquery.mobile.datebox.i18n.ru.utf8.js"></script>
+<!---------------------------------->
+
+
+<!--Плеер -->
+<!--<script type="text/javascript" src="soundmanager/soundmanager2-jsmin.js"></script>-->
+<!------------------------------------ -->
+
+
+<!--Автозаполнение -->
+<!--<link href="css/jquery-ui-1.10.3.custom.css" rel="stylesheet" type="text/css"/>-->
+<!--<script  src="js/jquery-ui-1.10.3.custom.min.js" type="text/javascript"></script>-->
+<!----------------------------------------------------------------------------------------- -->
+
+
+<!--Date.js-->
+<script type="text/javascript" src="js/date.js"></script>
+<!----------------------------------------------------------------------------------------- -->
+
+
+<!--WALL_POST.js-->
+<script type="text/javascript" src="js/wall_post.js"></script>
+<!----------------------------------------------------------------------------------------- -->
+
+
+
+<script>
+    var viewer_id;
+    var access_token;
+
+
+    var url_parser = {
+        get_args: function (s) {
+            var tmp=new Array();
+            s=(s.toString()).split('&');
+            for (var i in s) {
+                i=s[i].split("=");
+                tmp[(i[0])]=i[1];
+            }
+            return tmp;
+        },
+        get_args_cookie: function (s) {
+            var tmp=new Array();
+            s=(s.toString()).split('; ');
+            for (var i in s) {
+                i=s[i].split("=");
+                tmp[(i[0])]=i[1];
+            }
+            return tmp;
+        }
+    };
+
+    var plugin_vk = {
+        wwwref: false,
+        plugin_perms: "friends,wall,offline",//messages, -
+        APP_ID: '3891893',
+
+        auth: function (force) {
+            //если в телефоне данные не сохранены
+            if (!window.localStorage.getItem("plugin_vk_token") || force || window.localStorage.getItem("plugin_vk_perms")!=plugin_vk.plugin_perms) {
+
+                //URL авторизации
+                var authURL="https://oauth.vk.com/authorize?client_id=" + plugin_vk.APP_ID + "&scope="+this.plugin_perms+"&redirect_uri=http://oauth.vk.com/blank.html&display=touch&response_type=token";
+
+                //Используем inAppBrowser  (window.open)
+                this.wwwref = window.open(encodeURI(authURL), '_blank', 'location=no');
+                this.wwwref.addEventListener('loadstop', this.auth_event_url);
+
+            } else {
+                //если данные есть в телефоне
+                <!--    USER_ID VK из localStorage -->
+                viewer_id = window.localStorage.getItem("plugin_vk_user_id");
+                access_token  = window.localStorage.getItem("plugin_vk_token")
+                getFavoriteClubs();
+            }
+        },
+
+        auth_event_url: function (event) {//Когда загрузка в браузере закончилась
+
+            var tmp=(event.url).split("#");
+
+            //Если мы на странице oauth.vk.com/blank.html
+            if (tmp[0]=='https://oauth.vk.com/blank.html' || tmp[0]=='http://oauth.vk.com/blank.html') {
+
+                //Закрываем окно
+                plugin_vk.wwwref.close();
+
+                var tmp=url_parser.get_args(tmp[1]);
+
+                //navigator.notification.alert(tmp['access_token']);
+
+                //Сохраняем токен и user_id ЛОКАЛЬНО
+
+                            window.localStorage.setItem("plugin_vk_token", tmp['access_token']);
+                            window.localStorage.setItem("plugin_vk_user_id", tmp['user_id']);
+//                            window.localStorage.setItem("plugin_vk_exp", tmp['expires_in']); // == 0 - вечный
+                            window.localStorage.setItem("plugin_vk_perms", plugin_vk.plugin_perms);
+
+                //navigator.notification.alert('Готово!');
+                <!--    USER_ID VK после авторизации-->
+                access_token = tmp['access_token'];
+                viewer_id = tmp['user_id']
+                //viewer_id = 555;
+
+                //$('#general-container').prepend('<div>autorize токен</div>');
+
+                //возможно мы регаем нового пользователя так как в телефоне данных нет либо они сброшены -
+                //сделаем проверку, если что новый пользователь будет зареган , либо продолжим работу зная токен и id VK
+                checkId ();
+
+            } else {
+                //navigator.notification.alert('это не страница для авторизации вк');
+
+            }
+        }
+    };
+
+
+    function Login(){
+
+        document.addEventListener("deviceready", onDeviceReady, true);
+
+    }
+    function onDeviceReady(){
+         //navigator.notification.alert("PhoneGap is working!!");
+
+        plugin_vk.auth();
+    }
+
+
+    Login();
+
+</script>
+
+
+
+
+
+
+
+<script type="text/javascript">
+    var serverPath = 'http://reallyclubs.ru/'
+    var myCity = null;
+    var track_num = 0;
+    /*
+     / ОТКУДА ЗАШЛИ КАКОЙ ID
+     */
+    //function getAppVars () {}
+    //getAppVars();
+
+    <!--    USER_ID VK-->
+    //viewer_id = u_id;
+    viewer_id = 926167;
+    var access_token;
+
+    function checkId () {
+
+        $.ajax({
+            url: serverPath + "check_id.php",
+            //      async: false,
+            data: {viewer_id: viewer_id },
+            type: 'POST',
+            success: function(data){
+                // console.log(data);
+
+
+                if (data.success !== 0) {
+                    //{"success":"1","new_user":"1" } //добавили нового
+                    //{"success":"1","new_user":"0" } // уже зарегестрирован
+
+                    getFavoriteClubs();
+                } else {
+                    alert ('Ошибка сервера. Не удалось зарегестрировать пользователя.')
+                }
+            }
+        });
+
+    }
+
+    checkId ();
+
+
+    function getCities () {
+
+        $.ajax({
+            url: serverPath + "getCities.php",
+            async: false,
+            type: 'POST',
+            success: function(data){
+
+                data = JSON.parse(data);
+
+//                console.log(data);
+
+                var cities = data;
+
+                for (var i in cities) {
+
+                    var city_text = '"' +cities[i].city + '"';
+
+                    $('.ul_cities').append('<li >' +
+                            '<a href="#" onclick="changeCity($(this).text());"  >' +
+                            cities[i].city +
+                            '</a>' +
+                            '</li>');
+                }
+
+                //$('body').bind('pageinit', function() {
+                ///$('.ul_cities').listview();
+                $('.ul_cities').listview('refresh');
+                //$('.ul_cities').trigger('create');
+                //});
+
+            }
+        });
+    }
+
+
+    function changeCity(city) {
+//        $('.city_head').html('').text(city).button().button('refresh');
+
+        if ($('.city_head span').length > 0) {
+            $('.city_head span span').text(city);
+        } else {
+            $('.city_head').text(city);
+        }
+
+
+        getClubsTracks(city);
+
+        $.mobile.changePage("#content", { transition: "slide", changeHash: true });
+
+    }
+
+
+    function changePage (id, trans) {
+        $.mobile.changePage(id, { transition: trans, reverse: true,  changeHash: true });
+    }
+
+    /*
+     /Любимые Клубы
+     */
+
+    var favorites;
+    function getFavoriteClubs () {
+
+        $.ajax({
+            url: serverPath + "getFavoriteClubs.php?viewer_id=" + viewer_id,
+//            async: false,
+            success: function(data){
+                ////console.log(data);
+                //console.log(JSON.parse(data));
+
+                favorites = JSON.parse(data);
+
+                console.log('getFavorite')
+                console.log(favorites)
+
+                //$('#general-container').prepend('<div>getFavjrites</div>');
+                getCities();
+
+                myCity = 'Петербург';
+
+                if (myCity !== null) {
+                    //getClubsTracks(myCity);
+                    changeCity(myCity);
+                }
+
+
+
+            }
+        });
+    }
+
+</script>
+
+
+<script type="text/javascript">
+    var clubs;
+    /*
+     /Все Клубы с трэками
+     */
+    //    city = 'Петербург';
+
+    function getClubsTracks (city) {
+        // console.log(city)
+
+        if ( city === undefined) {
+            city = '';
+        }
+
+        $.ajax({
+            url: serverPath + "getClubsTracks.php?city=" + city,
+            type: 'POST',
+//                async: false,
+            success: function(data){
+
+                data = JSON.parse(data);
+
+                if (data.hasOwnProperty('error_msg') == true) {
+                    alert(data.error_msg);
+                } else {
+
+                    ////console.log(data);
+                    //console.log(JSON.parse(data));
+                    /*
+                     /ВСЕ ДАННЫЕ
+                     */
+                    clubs = data;
+                    //console.log('getClubsTracks');
+//                    console.log(clubs)
+                    // $('#general-container').prepend('<div>getTracks</div>');
+
+                    onLoad();
+
+                }
+
+            }
+        });
+    }
+
+
+</script>
+
+<script type="text/javascript">
+//function StandartPlayerAction () {}
+
+
+
+function clubsAuto () {
+    /*
+     /АВТОКОМПЛИТ всех клубов
+     */
+    //console.log('autocomplete clubs');
+
+    var source = [];
+    ////console.log(clubs);
+    for (var i in clubs) {
+        source.push({label: clubs[i].club, club_id: clubs[i].club_id});
+    }
+
+    //console.log(source)
+    $('#find')
+            .autocomplete({
+                source: source,
+                minLength: 1,
+                select: function (e,ui) {
+                    //console.log('name: '+ui.item.label, 'id: ' + ui.item.club_id)
+
+                    for (var i in clubs) {
+
+                        if (parseInt(clubs[i].club_id) == parseInt(ui.item.club_id)) {
+                            var oneClub = {};
+                            oneClub[0] = clubs[i];
+
+                            $('#show_found').html('');
+                            buildClubsTracks(oneClub, $('#show_found'));
+
+
+                            $('._page').hide();
+                            $('#show_found').show();
+                        }
+                    }
+
+
+                }
+            })
+            .on('focus', function () {
+                $(this).autocomplete('search', '');
+            })
+            .on('keyup', function () {
+                if ($(this).attr('value') == '') {
+//                buildClubsTracks(clubs, $('#content'));
+                    $('._page').hide();
+                    $('#content').show();
+                }
+
+            });
+
+
+}
+
+
+function buildClubsTracks (clubs, el) {
+    /*
+     /ВЕРСТКА всех клубов и трэков
+     */
+    //console.log('build page');
+    //$('#general-container').prepend('<div>build page</div>');
+    //$('#content').html('');
+    //$('#find').attr('value','');
+    //console.log(clubs)
+    var page_id = el.attr('id');
+    var ul_clubs = el.find('.ul_clubs');
+
+
+    if (page_id == 'content') {
+        var popup_id = '#show_date';
+    }
+
+    if (page_id == 'favorites') {
+        popup_id = '#show_fav_date';
+    }
+//    $('#' + page_id + 'ul').html('');
+
+    ul_clubs.html('');
+
+
+//    var track_num = 0;
+    for (var i in clubs) {
+
+        var club = clubs[i];
+        var club_id = clubs[i].club_id;
+        var clubName = clubs[i].club;
+        var is_fav='no_fav';
+        var sovp = [];
+
+        for (var p in favorites){
+
+            //console.log(club_id, favorites[p].club_id)
+
+            if (parseInt(favorites[p].club_id) == parseInt(club_id) ) {
+
+                sovp.push('1');
+            }
+
+            if (sovp.length !==0) {
+                is_fav = 'favorite';
+            } else {
+                is_fav = 'no_fav';
+            }
+        }
+
+
+//КЛУБ
+
+
+//           var ul_clubs = el.find('.ul_clubs');
+//        //console.log('ADD CLUB')
+        ul_clubs
+                .append($('<li/>', {    //here appending `<li>`
+//                            'data-role': "list-divider"
+                    'class': "ui-li ui-li-static ui-btn-up-c "
+                })
+
+                        .append('<div class="club_string"><div class="club" data-id="' + club.club_id + '">' + club.club + '</div><div   class="ui-icon ui-icon-star ui-icon-shadow cursor ' + is_fav + '" ></div></div>'));
+
+//ТРЭКИ
+        //el.append('<ul data-role="listview" class="ul_ul" data-filter="true" data-inset="true" data-filter-placeholder="Введите название клуба"></ul>')
+
+//        if (el.attr('id') == 'content') {
+//           var ul =  $('#content .ul_ul');
+//        }
+
+
+        var tracks = club.tracks;
+        var newTracks = {};
+        var ind = [];
+
+//                    //console.log(tracks);
+        var rus = {'12': 'декабря','01': 'января','02': 'февраля','03': 'марта','04': 'апреля','05': 'мая','06': 'июня','07': 'июля','08': 'августа','09':'сентября','10':'октября','11': 'ноября'};
+
+        var tracksCount = tracks.length;
+        var trackNull= [];
+
+
+        for (var t in tracks) {
+
+            var x = tracks[t].date;
+
+            if (x == null) {
+                trackNull.push('1');
+                continue;
+            }
+
+            if (x.indexOf(',') ==-1 || x.indexOf('—') !==-1 || x.indexOf('до') !==-1  ) {
+                //console.log(x)
+                if ( x.indexOf('—')!==-1) {
+                    var y = x.split('—');//Сб 21 августа - Пт 30 августа
+
+                    //month[1]    //month[2]
+                    var month = y[0].split(' ');// Сб    |    21    |    августа
+                    //var day = month[0];
+
+                    for (var i in rus) {
+                        if (rus[i] == month[2] ) {
+                            month[2] = i;
+                        }
+                    }
+
+                    var date1 = month[1] + '.' + month[2];//21.10
+
+                    var month = y[1].replace(/^\s*/,'').replace(/\s*$/,'').split(' ');
+                    //var day = month[0];
+                    //console.log(month);
+                    for (var i in rus) {
+                        if (rus[i] == month[2] ) {
+                            month[2] = i;
+                        }
+                    }
+
+                    var date2 = month[1] + '.' + month[2];
+
+                    //для сорт-ки  по датам
+                    var year = new Date().getFullYear();
+                    var msec = Date.parseExact(date1 + '.' + year, 'dd.MM.yyyy').getTime();
+
+
+                    newTracks[msec] = tracks[t];
+
+                    newTracks[msec].new_date = date1 + '-' + date2;
+                    ind.push(msec);
+
+
+                    //console.log(newTracks);
+                }
+
+
+
+
+                if ( x.indexOf('до')!==-1) {
+
+                    //month[2]    //month[3]
+                    var month = x.replace(/^\s*/,'').replace(/\s*$/,'').split(' ');//до | Сб    |    21    |    августа
+                    //var day = month[0];
+
+                    for (var i in rus) {
+                        if (rus[i] == month[3] ) {
+                            month[3] = i;
+                        }
+                    }
+
+                    var date = month[2] + '.' + month[3];//21.10
+
+                    //для сорт-ки  по датам
+                    var year = new Date().getFullYear();
+                    var msec = Date.parseExact(date + '.' + year, 'dd.MM.yyyy').getTime();
+
+
+                    newTracks[msec] = tracks[t];
+
+                    newTracks[msec].new_date = 'до ' + date;
+                    ind.push(msec);
+
+
+                    //console.log(newTracks);
+                }
+
+
+//                newTracks[t] = tracks[t];
+
+            } else {
+
+                x = x.split(',');
+                var date = x[0];
+                var time = x[1];
+
+                time = time.replace(/^\s*/,'').replace(/\s*$/,'');
+
+
+                var month = date.split(' ');
+                var day = month[0];
+
+                for (var i in rus) {
+                    if (rus[i] == month[2] ) {
+                        month[2] = i;
+                    }
+                }
+
+                date = month[1] + '.' + month[2];
+
+                //для сорт-ки  по датам
+                var year = new Date().getFullYear();
+                var msec = Date.parseExact(month[1] + '.' + month[2] + '.' + year + ' ' + time, 'dd.MM.yyyy HH:mm').getTime();
+
+                ////console.log('msec: ' + msec);
+
+                function checkProp () {
+                    if (newTracks.hasOwnProperty(msec)) {
+                        msec = msec + 10;
+                        checkProp();
+                    } else {
+                        newTracks[msec] = tracks[t];
+                        newTracks[msec].new_date = date + ' | ' + time + ' | ' + day;
+                        ind.push(msec);
+                    }
+
+                }
+
+
+                checkProp();
+
+            }
+
+        }
+
+//console.log(newTracks);
+
+        ind.sort(function(a,b){return a - b});
+
+
+//        var track_num = 0;
+        var newTracksCount = newTracks.length;
+        var trackEmpty= [];
+        //for (var k in newTracks) {
+        for (var z in ind){
+
+
+
+            var vars = newTracks[ind[z]];
+            //var vars = newTracks[k];
+            //var year = new Date().getFullYear();
+
+            if (vars.title !== 'empty') {
+
+
+
+                ul_clubs.find('li:last')
+//                        .append($('<li/>', {    //here appending `<li>`
+////                            'data-role': "list-divider"
+//                            'class': "ui-li ui-li-static ui-btn-up-c "
+//                        })
+                        .append('<div class="track" >' +
+                                '<div class="button">' +
+                                '<div class="play" id="' + (parseInt(track_num)+1) + '" file="' + serverPath + vars.url + '"></div>' +
+                                '<div class="pause"></div>' +
+                                '</div>' +
+                                '<div class="nameTrack" >' + vars.name + '</div>' +
+
+//                        '<div class="date">'+ vars.date +'</div>' +
+                                '<div class="date" ><a  data-rel="popup" data-position-to="window" class="my_info "  data-iconpos="right"  href="'+ popup_id +'" data-transition="flip" data-inline="true" data-show="' + vars.new_date + '" data-club="'+ clubName +'" data-artist="'+ vars.artist +'" ></a></div>' +
+//data-position-to="window" // data-rel="dialog"// data-role="button" // data-icon="info"
+
+                                '<div class="time"></div>' +
+                                '<div class="clear"></div>' +//src="' + serverPath + tracks[k].url + '"
+                                '<audio preload="none" class="audio_html5" data-id="' + (parseInt(track_num)+1)  + '" id="_' + (parseInt(track_num)+1)  + '" src="' + serverPath + vars.url + '" controls style="display: none;">' + vars.name + '</audio>' +
+                                '</div>'
+                        );
+                //));
+
+
+
+            } else {
+                ul_clubs.find('li:last').append('<div class="hidden" data-id="' + vars.id + '" data-club="' + club_id + '"  ></div>');
+                trackEmpty.push('1');
+            }
+            track_num++;
+        }
+
+
+//        $('body').bind('pageinit', function() {
+//            ul.listview('refresh');
+//        });
+//
+//        ul.find('li:first').addClass('ui-corner-top');
+//        ul.find('li:last').addClass('ui-corner-bottom');
+
+
+        //Если в клубе нет трэков(случай пустой таблицы)\
+//       console.log(newTracks.length) - почеу то undefined
+//        console.log(trackEmpty)
+        //if (trackNull.length == tracksCount || trackEmpty.length == newTracks.length) {
+        if (ul_clubs.find('li:last .track').length == 0) {
+            ul_clubs.find('li:last').append('<div class="clear no_audio">Нет аудио.</div>');
+        }
+
+    }
+
+
+
+    //el.trigger('create');
+
+
+
+    // el.trigger("pagecreate");
+    // $('body').trigger("pagecreate");
+    $('body').bind('pageinit', function() {
+//        ul_clubs.listview().listview('refresh');
+        ul_clubs.listview('refresh');
+    });
+
+//    el.bind('pagecreate', function() {
+//        ul_clubs.listview('refresh');
+//
+//    });
+
+    ul_clubs.find('li:first').addClass('ui-corner-top');
+    ul_clubs.find('li:last').addClass('ui-corner-bottom');
+
+
+//    tooltipEnabled();
+    playPause();
+    audioEvents();
+}
+
+
+function playPause () {
+    /*
+     /PLAY, PAUSE ... hidden HTML5 audio
+     */
+    $('.play').on('click', function () {
+        $('.footer_player').addClass('bottom_slide');
+
+        if ($('.play_now').length > 0) {
+
+            $('.play_now').each(function () {
+                $(this).find('.pause').hide();
+                $(this).find('.play').show();
+
+                $(this).find('.audio_html5').get(0).pause();
+
+            });
+
+        }
+
+        var id = $(this).attr('id');
+        var audioElement = $('.ui-page-active #_'+id).get(0);
+
+        audioElement.play();
+
+        $(this).fadeOut(200);
+        $(this).next().delay(200).fadeIn(300);
+
+        $('.play_now').removeClass('play_now');
+
+        $(this).closest('.track').addClass('play_now')
+
+    });
+
+    //PAUSE
+    $('.pause').on('click', function () {
+        clearInterval(nowPlay.timerId);
+        $('.footer_player').removeClass('bottom_slide');
+
+//        var id = $(this).prev().attr('id');
+//
+//        $('.ui-page-active #_'+id).get(0).pause();
+//
+//        $(this).fadeOut(200);
+//        $(this).prev().delay(200).fadeIn(300);
+//
+//        $(this).closest('.track').removeClass('play_now');
+
+
+
+//        if ($('.play_now').length > 0) {
+//
+//            $('.play_now').each(function () {
+//                $(this).find('.pause').hide();
+//                $(this).find('.play').show();
+//
+//                $(this).find('.audio_html5').get(0).pause();
+//
+//            });
+//
+//        }
+
+
+        $('[data-role=page]').each(function () {
+            if ($(this).find('#'+nowPlay.id).length>0){
+                $(this).find('#'+nowPlay.id).get(0).pause();
+            }
+        });
+
+
+
+
+    });
+
+    //Soundmanager
+    //StandartPlayerAction();
+
+}
+
+var nowPlay = {};
+
+function audioEvents () {
+    /*
+     /  АУДИО СОБЫТИЯ
+     */
+    $('.audio_html5').each(function () {
+
+        $(this).get(0).volume = 0.6;
+
+        //Играть следующий трэк после окончания текущего
+        $(this).get(0).addEventListener('ended', function () {
+            //console.log('end ');
+
+            var id =  $(this).data('id');
+            //console.log('end track id' + id);
+            id++;
+
+            var next_wrap = $(this).closest('.track').nextAll('.track:first').not('.track.hide_track');
+
+            if (next_wrap.length>0) {
+                next_wrap.find('.play').hide();
+                next_wrap.find('.pause').show()
+                next_wrap.find('.audio_html5').get(0).play();
+            } else {
+                var next_li = $(this).closest('li').next('li');
+                nextLi(next_li);
+            }
+
+            var track = $(this).closest('.track');
+            track.find('.pause').hide();
+            track.find('.play').show();
+            clearInterval(nowPlay.timerId);
+        });
+
+
+        $(this).get(0).addEventListener('pause', function () {
+
+            var track = $(this).closest('.track')
+
+            track.find('.pause').hide();
+            track.find('.play').show();
+
+            //clearInterval(nowPlay.timerId);
+        });
+
+
+
+
+        //Остановить все трэки при старте Нового
+        $(this).get(0).addEventListener('play', function () {
+
+            clearInterval(nowPlay.timerId);
+            var new_play = $(this).attr('id');
+
+
+            var track = $(this).closest('.track');
+
+            track.find('.play').hide();
+            track.find('.pause').show();
+
+            $('.audio_html5').each(function () {
+
+                if ($(this).attr('id') !== new_play) {
+                    $(this).get(0).pause();
+                } else {
+
+                    if ($(this).closest('[data-role=page]').hasClass('ui-page-active') == false) {
+                        $(this).get(0).pause();
+                    }
+
+                }
+
+
+            });
+
+
+
+            nowPlay.id = new_play;
+
+
+
+            var proc = Math.floor(($('#'+new_play).get(0).volume * 100));
+
+            $('.slider_wrap.vol input')
+                    .val(proc)
+                    .slider("refresh");
+
+
+
+            updateTrackTime( $(".ui-page-active #" + nowPlay.id).get(0));
+
+
+            nowPlay.timerId = setInterval(function () {
+                if ($(".ui-page-active #" + nowPlay.id).length>0) {
+                    updateTrackTime( $(".ui-page-active #" + nowPlay.id).get(0));
+                }
+            },1000)
+
+
+
+
+
+
+        });
+
+
+
+
+
+
+    });
+
+
+}
+
+function updateTrackTime(track){
+//    console.log('updateTrackTime')
+    var currTimeDiv = $('.ui-page-active .currentTime');
+    var durationDiv = $('.ui-page-active .duration');
+
+    var currTime = Math.floor(track.currentTime).toString();
+    var duration = Math.floor(track.duration).toString();
+
+    currTimeDiv.each(function () {
+        $(this).text(formatSecondsAsTime(currTime));
+    });
+
+
+
+
+
+    if (isNaN(duration)){
+//        durationDiv.innerHTML = '00:00';
+
+        durationDiv.each(function () {
+            $(this).text('00:00');
+        });
+    }
+    else{
+
+        nowPlay.duration = parseInt(duration);
+
+//        durationDiv.innerHTML = formatSecondsAsTime(duration);
+
+        durationDiv.each(function () {
+            $(this).text(formatSecondsAsTime(duration));
+        });
+
+        var proc = Math.floor((100/duration) * currTime);
+
+//        $('#slider_dur')
+        $('.slider_wrap input').not('.slider_wrap.vol input')
+                .val(proc)
+                .slider("refresh");
+
+    }
+}
+
+
+function formatSecondsAsTime(secs, format) {
+    var hr  = Math.floor(secs / 3600);
+    var min = Math.floor((secs - (hr * 3600))/60);
+    var sec = Math.floor(secs - (hr * 3600) -  (min * 60));
+
+    if (min < 10){
+        min = "0" + min;
+    }
+    if (sec < 10){
+        sec  = "0" + sec;
+    }
+
+    return min + ':' + sec;
+}
+
+
+
+
+
+
+
+
+function buildFavorites () {
+    var ul_clubs = $('#favorites').find('.ul_clubs');
+
+//    ul_clubs.html('');
+
+    if (favorites == 0) {
+        ul_clubs.html('');
+
+        ul_clubs.html('<li class="ui-corner-top no_clubs">Выберите любимые клубы.</li>')
+
+
+
+    } else {
+
+
+        var fav = {};
+
+        for (var i in clubs) {
+
+            for (var k in favorites) {
+                //if (favorites[k].hasOwnProperty('club_id')){
+                if (parseInt(favorites[k].club_id) == parseInt(clubs[i].club_id)) {
+
+                    fav[i] = {
+                        club: clubs[i].club,
+                        club_id: clubs[i].club_id,
+                        tracks: clubs[i].tracks
+                    }
+
+                }
+                //}
+            }
+
+        }
+
+        //console.log('NEW FAVORITES');
+        //console.log(fav);
+
+        buildClubsTracks(fav, $('#favorites'));
+
+
+    }
+
+
+}
+
+
+function showPage (show) {
+
+    $('._page').hide();
+    show.show();
+
+
+}
+
+
+function onLoad (){
+
+    //$('#general-container').prepend('<div>onLoad</div>');
+    /*
+     /АВТОКОМПЛИТ всех клубов
+     */
+    //clubsAuto();
+
+
+    /*
+     /ВЕРСТКА всех клубов и трэков
+     */
+    //console.log('CLUBS FIRST TIME')
+    //console.log(clubs)
+    buildClubsTracks(clubs, $('#content'));
+
+    /*
+     /FAVORITES
+     */
+    buildFavorites();
+
+    //if MOBILE
+    if (window.location.href.indexOf('mobile') !==-1) {
+        //console.log('View on Mobile');
+    }
+    //END MOBILE
+
+
+    /*
+     /PLAY, PAUSE ... hidden HTML5 audio
+     */
+    playPause();
+
+
+    /*
+     /  АУДИО СОБЫТИЯ
+     */
+    audioEvents ();
+
+
+
+
+
+
+}
+
+
+
+
+function addClub (this_) {
+    //console.log('addClub')
+
+    var el = $(this_).closest('.club_string').find('.club');
+    var club = el.text();
+    var club_id = el.data('id');
+    var vars = {name: club_id, viewer_id: viewer_id};
+    //console.log(vars);
+    $.ajax({
+        url: serverPath + "add_likeclubs.php",
+        type: 'POST',
+        data: vars,
+        success: function(data){
+            //console.log(data);
+            ////console.log(JSON.parse(data));
+
+            //console.log('refresh favorites');
+
+            $('[data-id="'+club_id+'"]').closest('.club_string').find('.ui-icon')
+                    .removeClass('no_fav')
+                    .addClass('favorite');
+
+            if (favorites == 0) {
+                //console.log('favorites == 0');
+                favorites={};
+
+                favorites[0] = {club: club, club_id: club_id};
+            } else {
+                var len = Object.keys(favorites).length;
+                favorites[len] = {club: club, club_id: club_id};
+            }
+
+            buildFavorites();
+        }
+
+    });
+}
+
+function deleteClub (this_) {
+    //console.log('deleteClub')
+
+    var el = $(this_).closest('.club_string').find('.club');
+    var club = el.text();
+    var club_id = el.data('id');
+    var vars = {name: club_id, viewer_id: viewer_id};
+    //console.log(vars);
+    $.ajax({
+        url: serverPath + "deleteClub.php",
+        type: 'POST',
+        data: vars,
+        success: function(data){
+            //console.log(data);
+            ////console.log(JSON.parse(data));
+
+            //console.log('refresh favorites');
+            $('[data-id="'+club_id+'"]').closest('.club_string').find('.ui-icon')
+                    .removeClass('favorite')
+                    .addClass('no_fav');
+
+            var number=[];
+
+
+            for (var c in favorites) {
+                if (favorites[c].hasOwnProperty('club') === true) {
+                    number.push('1');
+                }
+            }
+
+            //Если только один клуб с id - те не пустой очищенный объект - просто онбуляем
+            if (number.length == 1) {
+                favorites = 0;
+            } else {
+                //Если нет ищем какой клуб удаляем и этот объект очищаем но оставляем для нумерации
+                for ( var x in favorites){
+                    if (parseInt(favorites[x].club_id) == parseInt(club_id)  ){
+
+                        favorites[x] = {};
+                    }
+                }
+
+            }
+
+
+            buildFavorites();
+        }
+    });
+}
+
+
+//Фильтр по Дате
+function showTodayTracks (today) {
+
+    $('.ui-page-active .my_info').each(function () {
+
+
+        var date = $(this).data('show').split('|');// 26.08 | 23:00 | Пн
+
+        date = date[0].replace(/^\s*/,'').replace(/\s*$/,'');
+
+        // console.log(today, date);
+
+
+
+        //Все трэки НЕ на Сегодня надо Скрыть если они уже не скрыты
+        var track = $(this).closest('.track');
+
+        if ( date !== today) {
+
+            //Если уже скрыто
+            if (track.hasClass('hide_track')) {
+
+            } else {
+                //Если не скрыто еще
+                track.addClass('hide_track');
+            }
+
+
+
+
+        } else {
+
+            //И показать  если они были скрыты
+
+            if (track.hasClass('hide_track')) {
+                track.removeClass('hide_track');
+            } else {
+                //Если не скрыто
+
+            }
+
+
+
+        }
+
+    });
+
+}
+
+
+function onChangeDate(this_){
+
+    var day = $(this_).val().substr(0,5);
+
+    showTodayTracks(day);
+}
+//end
+
+function sliderDurationEvent () {
+    $('.slider_wrap input').not('.slider_wrap.vol input').each(function () {
+
+        $(this).slider({
+            stop: function( event, ui ) {
+
+
+                //console.log(event.target.valueAsNumber);
+
+
+                var proc = event.target.valueAsNumber;
+
+
+                var sec = Math.floor( ( (nowPlay.duration/100) * proc) + 2 );
+
+                if ($('.ui-page-active #'+nowPlay.id).length>0) {
+
+                    $('.ui-page-active #'+nowPlay.id).get(0).currentTime = sec;
+
+                    $('.ui-page-active .duration').text(formatSecondsAsTime(sec));
+                }
+
+
+                //$('[role=slider]').removeAttr('aria-valuetext');
+
+
+            }
+        });
+    });
+}
+
+
+function sliderVolumeEvent (){
+    $('.slider_wrap.vol input').each(function () {
+
+        $(this).slider({
+            stop: function( event, ui ) {
+
+
+                // console.log(event.target.valueAsNumber);
+
+
+                var vol = (event.target.valueAsNumber/100);
+
+                //            $('#'+nowPlay.id).get(0).volume = vol;
+
+                $('.audio_html5').each(function () {
+                    $(this).get(0).volume = vol;
+
+                });
+                //
+                //            $('.audio_html5').get(0).volume = vol;
+
+            }
+        });
+
+
+    });
+
+
+}
+
+function nextLi (next_li) {
+    if (next_li.length > 0) {
+
+        var next = next_li.find('.track:visible:first');
+
+        if (next.length > 0) {
+            next.find('audio').get(0).play();
+        } else {
+
+            var next_next = next_li.next('li');
+
+            nextLi(next_next);
+        }
+
+    }
+}
+
+function prevLi (prev_li) {
+    if (prev_li.length > 0) {
+
+        var prev = prev_li.find('.track:visible:last');
+
+        if (prev.length > 0) {
+            prev.find('audio').get(0).play();
+        } else {
+
+            var prev_prev = prev_li.prev('li');
+
+            prevLi(prev_prev);
+        }
+
+    }
+}
+
+
+
+$(function () {
+
+    $('.ui-icon-star.no_fav').live('click', function () {
+        addClub($(this));
+    });
+
+    $('.ui-icon-star.favorite').live('click', function () {
+        deleteClub($(this));
+    });
+
+
+    $('.my_info').live('click', function () {
+
+        var id = $(this).attr('href');
+
+        $(id).find('.ev_date').text($(this).data('show'));
+        $(id).find('.ev_club').text($(this).data('club'));
+        $(id).find('.ev_artist').text($(this).data('artist'));
+//                .popup( "open", {positionTo: 'origin'});
+
+    });
+
+//КАК ТАБЫ без transition
+//    $("a[data-role=tab]").each(function () {
+//        var anchor = $(this);
+//        anchor.bind("click", function () {
+//            $.mobile.changePage(anchor.attr("href"), {
+//                transition: "none",
+//                changeHash: false
+//            });
+//            return false;
+//        });
+//    });
+
+    $("div[data-role=page]").bind("pagebeforeshow", function (e, data) {
+        $.mobile.silentScroll(0);
+
+        $('.slider_wrap').each(function () {
+            //console.log($(this).find('[role="application"]').length);
+
+            if ($(this).find('[role="application"]').length > 1 ) {
+
+                $(this).find('[role="application"]').nextAll('[role="application"]').remove();
+            }
+        });
+
+        sliderDurationEvent();
+
+        sliderVolumeEvent ();
+
+        //$.mobile.changePage.defaults.transition = 'slide';
+    });
+
+
+
+    $('a[data-role=tab]').on('click', function () {
+        $('[data-here=' + $(this).data('go') + ']').addClass('ui-btn-active');
+        var anchor = $(this);
+
+//        anchor.bind("click", function () {
+//            $.mobile.changePage(anchor.attr("href"), {
+//                transition: "none",
+//                changeHash: false
+//            });
+//            return false;
+//        });
+    });
+
+
+    //ЕСЛИ ЕСТЬ кнопка 'СЕгодня'
+
+    $('.today').on('click', function () {
+
+
+        var day = new Date().getDate();
+        var month = new Date().getMonth() + 1;
+
+        if (month < 10) { month = '0' + month; }
+
+        var today = day + '.' + month;
+
+        showTodayTracks (today);// today "30.08"
+
+
+    });
+
+
+    //Перемотка трэка
+//    $( "#slider_dur" )
+
+    sliderDurationEvent ();
+
+    //Громкость
+
+    sliderVolumeEvent ();
+
+
+    $('.play_btn').on('click', function () {
+
+        if ($('.ui-page-active #'+nowPlay.id).length>0) {
+            $('.ui-page-active #'+nowPlay.id).get(0).play();
+        }
+
+    });
+
+    $('.pause_btn').on('click', function () {
+        //$('.ui-page-active #'+nowPlay.id).get(0).pause();
+        clearInterval(nowPlay.timerId);
+        $('[data-role=page]').each(function () {
+            //$('.ui-page-active #'+nowPlay.id)
+
+            if ($(this).find('#'+nowPlay.id).length>0) {
+                $(this).find('#'+nowPlay.id).get(0).pause();
+                //console.log('есть на странице')
+            }
+
+        });
+
+    });
+
+    $('.prev_btn').on('click', function () {
+
+        if ($('.ui-page-active #'+nowPlay.id).length>0) {
+            var track = $('.ui-page-active #'+nowPlay.id).closest('.track');
+
+            var prev = track.prevAll('.track:visible:first');
+            if (prev.length!==0){
+                prev.find('audio').get(0).play();
+            } else {
+
+                var prev_li = track.closest('li').prev('li');
+
+                prevLi(prev_li);
+
+            }
+        }
+
+
+    });
+
+
+
+    $('.next_btn').on('click', function () {
+        if ($('.ui-page-active #'+nowPlay.id).length>0) {
+            var track = $('.ui-page-active #'+nowPlay.id).closest('.track');
+
+            var next = track.nextAll('.track:visible:first');
+
+            if (next.length!==0){
+                next.find('audio').get(0).play();
+            } else {
+
+                var next_li = track.closest('li').next('li');
+
+                nextLi (next_li);
+
+            }
+
+        }
+    });
+
+
+//        $('body').on('click' ,function () {
+
+//        });
+
+    $(document).bind('click.myEvent', function (e) {
+
+        // console.log($(e.target).closest('.footer_player').length);
+        var el = $(e.target);
+
+        var is_footer = $(e.target).closest('.footer_player').length;
+
+
+        if (el.hasClass('play') == false && el.hasClass('pause') == false && is_footer == 0  ) {
+            if ($('.pause:visible').length == 0) {
+                $('.footer_player').removeClass('bottom_slide');
+            }
+        }
+    });
+
+
+});
+
+</script>
+
+</head>
+
+
+<body>
+<!--<div   id="general-container" >-->
+
+
+<!--<div id="ajaxsPlayer" >-->
+<!--<input type='text'  id="find" placeholder="Введите название клуба" size='60' maxlength='50'>-->
+
+<div id="cities" data-role="page" class="_page">
+
+    <div data-role="header" data-position="fixed"  data-theme="d">
+    </div>
+
+    <div data-role="content" >
+
+        <ul data-role="listview" class="ul_cities" data-filter="true" data-inset="true" data-filter-placeholder="Поиск по городам">
+
+
+        </ul>
+
+    </div>
+
+
+    <div data-role="footer" class="footer_cities" data-position="fixed"  data-theme="a" data-tap-toggle="false">
+
+    </div>
+
+</div>
+
+
+
+<div id="content" data-role="page" class="_page">
+
+    <div data-role="header" data-position="fixed"  data-theme="d">
+        <!--<h1 >Все клубы</h1>-->
+        <div data-role="navbar" data-iconpos="left" >
+            <ul>
+                <li><a data-theme="b"  data-icon="grid" data-iconshadow="true" data-role="tab"  href="#content" data-here="content" >Все клубы</a></li>
+                <li><a data-theme="b" data-icon="star" data-role="tab" data-transition="slide" href="#favorites" data-go="favorites">Избранное</a></li>
+            </ul>
         </div>
-        <script type="text/javascript" src="cordova.js"></script>
-        <script type="text/javascript" src="js/index.js"></script>
-        <script type="text/javascript" src="js/ajax.js"></script>
-       	<script type="text/javascript" src="js/url.js"></script>
-        <script type="text/javascript" src="js/overthrow.js"></script>
-        <script type="text/javascript" src="js/plugin_www_post-tracker.ru.js"></script>
-        <script type="text/javascript">
-        	document.addEventListener("deviceready", init, false);
-        </script>
-    </body>
+
+        <div data-role="button" data-corners="false" onclick="changePage('#cities', 'slide')" class="city_head"></div>
+
+
+    </div>
+
+    <input id="mode1"
+           type="date"
+           value=""
+           data-role="datebox"
+           data-options='{ "mode": "calbox"}'
+           onchange="onChangeDate(this);"
+            />
+
+
+    <div data-role="content" >
+        <!--<div data-role="button" data-mini="true" class="city_head">Питер</div>-->
+        <!--<a href="#" class="ui-icon-alt" data-iconpos="notext" data-role="button" data-shadow="true" data-iconshadow="true"  data-icon="grid"data-theme="c" >Открытый выбор даты</a>-->
+
+        <ul data-role="listview" class="ul_clubs" data-filter="true" data-inset="true" data-filter-placeholder="Поиск по клубам">
+        </ul>
+
+    </div>
+
+
+    <div data-role="footer" class="footer_player" data-position="fixed"  data-theme="a" data-tap-toggle="false">
+        <!--<h1>s</h1>-->
+
+        <!--<div data-role="navbar" data-iconpos="left" >-->
+        <!--<ul>-->
+        <!--<li><a data-theme="a"  data-icon="play" data-iconshadow="true"     >P/P</a></li>-->
+        <!--<li><a data-theme="a" data-icon="forvard"  data-transition="slide"  >FF</a></li>-->
+        <!--</ul>-->
+        <!--</div>-->
+
+        <div>
+
+            <div data-role="controlgroup" class="audio_btn" data-type="horizontal">
+
+                <a data-role="button" class="prev_btn" data-icon="arrow-l" data-iconpos="notext" href="">Назад</a>
+                <a data-role="button" class="pause_btn" data-icon="alert" data-iconpos="notext" href="">Пауза</a>
+                <a data-role="button" class="play_btn" data-icon="alert" data-iconpos="notext" href="">Играть</a>
+                <a data-role="button" class="next_btn" data-icon="arrow-r" data-iconpos="notext" data-iconpos="right" href="">Вперед</a>
+
+            </div>
+
+
+            <!--<label for="slider-fill">Input slider:</label>-->
+            <div class="slider_wrap">
+                <input type="range" name="slider-fill"  class="audio_slider" value="0" min="0" max="100" data-highlight="true" />
+            </div>
+
+            <div  class="min-sec currentTime">00:00</div>
+            <div  class="min-sec duration">00:00</div>
+
+            <div class="slider_wrap vol">
+                <input type="range" name="slider-fill"  class="audio_slider" value="60" min="0" max="100" data-highlight="true" />
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div data-role="popup" id="show_date" class="ui-content" data-theme="d"  data-history="false" data-position="left">
+
+        <p class="ev_club"></p>
+        <p class="ev_date"></p>
+        <p class="ev_artist"></p>
+
+        <a class="wall_post" href="#" data-role="button" data-mywrap="main"><div class="vk_icon"></div> Поделиться</a>
+    </div>
+
+    <a id="for_mess"  data-rel="popup"  href="#" class="hidden" data-positionTo="origin"></a>
+
+    <div id="main_mess" data-role="popup" data-url="for_mess" class="message" class="ui-content" data-theme="e"  data-history="false" >
+        <p></p>
+    </div>
+
+
+
+
+</div>
+
+<div id="favorites" data-role="page"  class="_page">
+
+    <div data-role="header" data-position="fixed" data-theme="d">
+        <div data-role="navbar" data-iconpos="left" >
+            <ul>
+                <li><a data-theme="b" data-icon="grid"  data-role="tab" data-rel="back" href="#content" data-go="content">Все клубы</a></li>
+                <li><a data-theme="b" data-icon="star" data-role="tab" href="#favorites" data-here="favorites" >Избранное</a></li>
+            </ul>
+        </div>
+
+        <div data-role="button" data-corners="false" onclick="changePage('#cities', 'slide')" class="city_head"></div>
+
+
+
+    </div>
+
+
+    <input id="mode2"
+           type="date"
+           value=""
+           data-role="datebox"
+           data-options='{ "mode": "calbox"}'
+           onchange="onChangeDate(this);"
+            />
+
+
+
+    <div data-role="content" >
+
+        <ul data-role="listview" class="ul_clubs" data-filter="true" data-inset="true" data-filter-placeholder="Поиск по клубам">
+        </ul>
+
+    </div>
+
+
+    <div data-role="footer" class="footer_player" data-position="fixed"  data-theme="a" data-tap-toggle="false">
+        <!--<h1>s</h1>-->
+
+        <!--<div data-role="navbar" data-iconpos="left" >-->
+        <!--<ul>-->
+        <!--<li><a data-theme="a"  data-icon="play" data-iconshadow="true"     >P/P</a></li>-->
+        <!--<li><a data-theme="a" data-icon="forvard"  data-transition="slide"  >FF</a></li>-->
+        <!--</ul>-->
+        <!--</div>-->
+
+        <div>
+
+            <div data-role="controlgroup" class="audio_btn" data-type="horizontal">
+
+                <a data-role="button" class="prev_btn" data-icon="arrow-l" data-iconpos="notext" href="">Назад</a>
+                <a data-role="button" class="pause_btn" data-icon="alert" data-iconpos="notext" href="">Пауза</a>
+                <a data-role="button" class="play_btn" data-icon="alert" data-iconpos="notext" href="">Играть</a>
+                <a data-role="button" class="next_btn" data-icon="arrow-r" data-iconpos="notext" data-iconpos="right" href="">Вперед</a>
+
+            </div>
+
+
+            <!--<label for="slider-fill">Input slider:</label>-->
+            <div class="slider_wrap">
+                <input type="range" name="slider-fill"  class="audio_slider" value="0" min="0" max="100" data-highlight="true" />
+            </div>
+
+            <div  class="min-sec currentTime">00:00</div>
+            <div  class="min-sec duration">00:00</div>
+
+            <div class="slider_wrap vol">
+                <input type="range" name="slider-fill"  class="audio_slider" value="60" min="0" max="100" data-highlight="true" />
+            </div>
+
+        </div>
+
+    </div>
+
+    <div data-role="popup" id="show_fav_date" class="ui-content" data-theme="d"  data-history="false" data-position="left">
+        <p class="ev_club"></p>
+        <p class="ev_date"></p>
+        <p class="ev_artist"></p>
+
+        <a class="wall_post" href="#" data-role="button" data-mywrap="fav">
+            <div class="vk_icon"></div>
+            Поделиться
+        </a>
+    </div>
+
+
+    <a id="for_mess_fav"  data-rel="popup"  href="#" class="hidden" data-positionTo="origin"></a>
+
+    <div id="fav_mess" data-role="popup" data-url="for_mess_fav" class="message" class="ui-content" data-theme="e"  data-history="false" >
+        <p></p>
+    </div>
+
+
+</div>
+
+
+
+
+
+<!--<div data-role="dialog" id="show_date"   data-history="false" >-->
+
+
+<!--<div data-role="header">-->
+<!--<h1>Bar</h1>-->
+<!--</div>&lt;!&ndash; /header &ndash;&gt;-->
+
+<!--<div data-role="content">-->
+<!--<p>I'm the second in the source order so I'm hidden when the page loads. I'm just shown if a link that references my id is beeing clicked.</p>-->
+<!--&lt;!&ndash;<p><a href="#foo" data-transition="flip">Back to foo</a></p>&ndash;&gt;-->
+<!--</div>&lt;!&ndash; /content &ndash;&gt;-->
+
+<!--<div data-role="footer">-->
+<!--<h4>Page Footer</h4>-->
+<!--</div>-->
+<!--</div>-->
+
+
+<!--</div>-->
+
+
+
+<!--</div>-->
+
+
+
+
+
+</body>
+
+
+
+
+
 </html>
