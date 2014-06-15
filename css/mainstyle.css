@@ -118,7 +118,7 @@ input:focus {
     width: 50%;
     text-align: center;
     cursor: pointer;
-    
+
     text-shadow: 1px 0px 2px #ECECEC;
 }
 
@@ -630,4 +630,149 @@ a.pause_btn .ui-icon {
     top: 0px;
     /*line-height: 10px;*/
     /*height: 25px;*/
+}
+
+a:hover {
+    text-decoration: none !important;
+}
+
+/*PLUS*/
+
+.nameTrack {
+    width: 70%;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+    margin-top: 4px;
+}
+
+.track .date {
+    height: 32px;
+    padding-top: 3px
+}
+
+.ui-icon-star.favorite {
+    margin-top: 5px;
+}
+
+.ui-input-datebox {
+    width: auto;
+    box-sizing: border-box;
+    float: none;
+    /*width : 100 % !important; v code*/
+}
+
+.ui-datebox-container .ui-header .ui-title {
+    display: none;
+}
+
+.ui-datebox-gridrow .ui-datebox-griddate-label {
+    color: #B1A8A8;
+}
+
+.ui-datebox-grid  .ui-datebox-gridrow:first-child {
+    margin-bottom: 4px;
+}
+
+.ui-datebox-griddate.orange {
+    background: rgb(248, 199, 0);
+    background: -moz-linear-gradient(top, rgba(248, 199, 0, 1) 0%, rgba(223, 134, 1, 1) 100%);
+    background: -webkit-gradient(linear, left top, left bottom, color-stop(0%, rgba(248, 199, 0, 1)), color-stop(100%, rgba(223, 134, 1, 1)));
+    background: -webkit-linear-gradient(top, rgba(248, 199, 0, 1) 0%, rgba(223, 134, 1, 1) 100%);
+    background: -o-linear-gradient(top, rgba(248, 199, 0, 1) 0%, rgba(223, 134, 1, 1) 100%);
+    background: -ms-linear-gradient(top, rgba(248, 199, 0, 1) 0%, rgba(223, 134, 1, 1) 100%);
+    background: linear-gradient(to bottom, rgba(248, 199, 0, 1) 0%, rgba(223, 134, 1, 1) 100%);
+    filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#f8c700', endColorstr='#df8601', GradientType=0);
+
+}
+
+.club {
+    font-size: 16px;
+    margin-top: 11px;
+}
+
+.ul_clubs.ui-listview-inset .ui-li {
+    padding-bottom: 16px;
+    /*25px*/
+
+}
+
+/*КЛУБЫ РАЗДЕЛЬНО*/
+.ul_clubs.ui-listview-inset .ui-li {
+    border-radius: 10px;
+    margin-bottom: 20px;
+    border-bottom-width: 1px;
+
+    /*-moz-box-shadow: 0 1px 4px rgba(0, 0, 0, .3);*/
+    /*-webkit-box-shadow: 0 1px 4px rgba(0, 0, 0, .3);*/
+    /*box-shadow: 0 1px 4px rgba(0, 0, 0, .3);*/
+
+}
+
+.ul_clubs.ui-listview {
+
+    box-shadow: none;
+}
+
+/* END КЛУБЫ РАЗДЕЛЬНО*/
+
+.club_string .ui-icon-star {
+    margin-top: 15px;
+}
+
+/*.ui-input-datebox {*/
+/*padding: 0px 18px;*/
+/*}*/
+
+#mode1, #mode2 {
+    background-color: white;
+    box-shadow: -1px -1px 1px #CCC;
+}
+
+.ui-input-search input.ui-input-text {
+    padding-left: 31px !important;
+    width: 100% !important;
+    border-radius: 15px;
+    padding-right: 0px;
+    background-color: #fff;
+
+    height: 30px !important;
+
+}
+
+.ui-input-search input.ui-input-text:focus, input:focus {
+    -webkit-box-shadow: inset 0 0 7px #387BBE, 0px 0 1px #387BBE;
+    box-shadow: inset 0 0 3px #387BBE, 0px 0 1px #387BBE;
+}
+
+.ui-listview-filter .ui-input-search {
+    background-color: #fff;
+    padding: 0px;
+    margin: 0px !important;
+
+    box-shadow: none !important;
+
+}
+
+#mode1, #mode1:hover, #mode1:focus, #mode2, #mode2:hover, #mode2:focus {
+    box-shadow: none !important;
+    border: 1px solid #CCC;
+    height: 33px !important;
+    color: #999;
+}
+
+.ui-input-datebox.ui-body-a {
+    padding: 0px 15px;
+}
+
+.ui-input-datebox a {
+    right: -5px;
+}
+
+.ui-page.ui-body-c {
+    background-image: none;
+}
+
+.city_head.ui-btn {
+    border-left: none;
 }

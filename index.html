@@ -184,6 +184,9 @@
     var access_token;
 
     function checkId () {
+        if (typeof viewer_id == 'undefined') {
+            viewer_id = 555;
+        }
 
         $.ajax({
             url: serverPath + "check_id.php",
@@ -193,10 +196,13 @@
             success: function(data){
                 // console.log(data);
 
+                data = JSON.parse(data);
 
-                if (data.success !== 0) {
+                if (parseInt(data.success) !== 0) {
                     //{"success":"1","new_user":"1" } //добавили нового
                     //{"success":"1","new_user":"0" } // уже зарегестрирован
+
+                    myCity = data.city;
 
                     getFavoriteClubs();
                 } else {
@@ -260,6 +266,19 @@
 
         $.mobile.changePage("#content", { transition: "slide", changeHash: true });
 
+        $.ajax({
+            url: serverPath + "setCity.php",
+            async: false,
+            data: {city: city, viewer_id: viewer_id},
+            type: 'POST',
+            success: function (data) {
+
+                data = JSON.parse(data);
+
+                //console.log(data);
+
+            }
+        });
     }
 
 
@@ -283,15 +302,15 @@
 
                 favorites = JSON.parse(data);
 
-                console.log('getFavorite')
-                console.log(favorites)
+//                console.log('getFavorite')
+//                console.log(favorites)
 
                 //$('#general-container').prepend('<div>getFavjrites</div>');
                 getCities();
 
 //                myCity = 'Петербург';
 
-                if (myCity !== null) {
+                if (myCity !== null && parseInt(myCity) !==0) {
                     //getClubsTracks(myCity);
                     changeCity(myCity);
                 }
@@ -1194,6 +1213,8 @@ function showTodayTracks (today) {
 
         //Все трэки НЕ на Сегодня надо Скрыть если они уже не скрыты
         var track = $(this).closest('.track');
+        <!--PLUS-->
+        var li_ = track.closest('li');
 
         if ( date !== today) {
 
@@ -1205,7 +1226,9 @@ function showTodayTracks (today) {
                 track.addClass('hide_track');
             }
 
-
+            if (li_.find('.track:visible').length == 0) {
+                li_.hide();
+            }
 
 
         } else {
@@ -1214,6 +1237,8 @@ function showTodayTracks (today) {
 
             if (track.hasClass('hide_track')) {
                 track.removeClass('hide_track');
+                li_.show();
+
             } else {
                 //Если не скрыто
 
@@ -1224,7 +1249,7 @@ function showTodayTracks (today) {
         }
 
     });
-
+    $('.no_audio').closest('li').hide();
 }
 
 
@@ -1513,6 +1538,9 @@ $(function () {
                 $('.footer_player').removeClass('bottom_slide');
             }
         }
+
+        var today = new Date().getDate();
+        $('.ui-datebox-griddate:contains("' + today + '")').addClass('orange');
     });
 
 
